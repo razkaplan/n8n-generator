@@ -1,0 +1,148 @@
+{
+  "name": "n8n Generator",
+  "nodes": [
+    {
+      "name": "Get System Prompt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [100, 200],
+      "parameters": {
+        "value": [
+          {
+            "name": "systemPrompt",
+            "value": "You are an n8n workflow generator. Given a user prompt, return a valid n8n workflow JSON."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Get User Prompt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [100, 300],
+      "parameters": {
+        "value": [
+          {
+            "name": "userPrompt",
+            "value": "Enter your prompt here"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Merge Prompts",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [300, 250],
+      "parameters": {
+        "functionCode": "return [{ json: { prompt: `System: ${items[0].json.systemPrompt}\nUser: ${items[1].json.userPrompt}` } }];"
+      }
+    },
+    {
+      "name": "Send to OpenAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [500, 250],
+      "parameters": {
+        "url": "https://api.openai.com/v1/completions",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\"model\":\"text-davinci-003\",\"prompt\":{{$json.prompt}},\"max_tokens\":2000}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_OPENAI_API_KEY",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "name": "Parse OpenAI JSON",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [700, 250],
+      "parameters": {
+        "functionCode": "return [{ json: JSON.parse(items[0].json.choices[0].text) }];"
+      }
+    },
+    {
+      "name": "Create Workflow in n8n",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [900, 250],
+      "parameters": {
+        "url": "http://localhost:5678/workflows",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={{ JSON.stringify($json) }}"
+      },
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "n8n API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Get System Prompt": {
+      "main": [
+        [
+          {
+            "node": "Merge Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get User Prompt": {
+      "main": [
+        [
+          {
+            "node": "Merge Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Prompts": {
+      "main": [
+        [
+          {
+            "node": "Send to OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Parse OpenAI JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse OpenAI JSON": {
+      "main": [
+        [
+          {
+            "node": "Create Workflow in n8n",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}
