@@ -1,0 +1,14 @@
+{
+  "database": {
+    "type": "sqlite",
+    "sqlite": {
+      "database": "./n8n.sqlite"
+    }
+  },
+  "executions": {
+    "process": "main"
+  },
+  "generic": {
+    "timezone": "UTC"
+  }
+}
